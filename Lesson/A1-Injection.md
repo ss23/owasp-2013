@@ -1,14 +1,14 @@
-h1. A1-Injection
+# A1-Injection
 
 > Injection flaws, such as SQL, OS, and LDAP injection occur when untrusted data is sent to an interpreter as part of a command or query. The attacker’s hostile data can trick the interpreter into executing unintended commands or accessing unauthorized data.
 > -- <cite>https://www.owasp.org/index.php/Top_10_2013-Risks</cite>
 
-h2. Introduction to Injection
+## Introduction to Injection
 
 While injection can cover a large (really, *large*) range of exploits, the most common one is probably the SQL Injection. For those of you familiar with SQL, this should be painfully obvious. Yet, people keep getting it wrong. Notable examples of people in the past who can't seem to get it right include anyone from Hells Pizza to Oracle/MySQL themselves!
 Hopefully this should help get you up to speed on what SQL Injection is, how to prevent it, and most importantly, how to exploit it for $$$.
 
-h3. SQL Primer
+### SQL Primer
 
 If you're not familiar with SQL, chances are you can find a nicer primer out there than this, but hopefully this will get you up to speed with the basics of what you need to know.
 SQL is a language for access a relational database. Imagine tables, and each of the tables has relationships to each other. So, you have a Product, which might have a Seller (that is, a company that sells this product). The tables for that might involve the product having an ID, a Title, and a Description. The Seller might involve an ID, Name, and Address. Then, a field for linking them might be Product having a Seller_id. If you're familiar with OOP, you might be able to draw parallels from there.
@@ -25,7 +25,7 @@ INSERT INTO products (id, title, description, seller_id) VALUES (1, "Auction Sit
 
 And at this point, you might be able to percieve a problem. What if you want to be able to insert products based on what a user puts in on a form? Lets say we had users, and they put in their username, our SQL would now contain some of their input.
 
-h3. The Injection
+### The Injection
 
 Funny story, my username for this site is actually `ss23"); DROP TABLE users;`. As you might imagine, the intention here is to delete the entire Users table, including all of it's data. The SQL query might look like this:
 ```sql
@@ -34,11 +34,11 @@ INSERT INTO users (id, username) VALUES (1, "ss23"); DROP TABLE users;
 
 In certian situations, this would actually delete all the data in that table (so, don't try it on live sites unless you like prison).
 
-h2. Our Application
+## Our Application
 
 Before, you look at the code, lets see if we can use this chance to see whether it is capable of SQL injection.
 
-h3. Heuristic detection
+### Heuristic detection
 
 After learning a little about SQL, you might have an idea of the kinds of characters that could cause an error. Imagine inserting a ".
 ```sql
@@ -51,7 +51,7 @@ Look what happens when we simply put in a single quote:
 
 An error like that is a fairly sure sign that there's some injection to be found. So, lets carry on and see if we can figure out what the query might look like. From there, we can working on coaxing out the information we want.
 
-h3. The Query
+### The Query
 
 Since it's a search query, we can be fairly sure there's a select, and given it's only one field, we can get a pretty good idea of what it might look like. In these situations, there are two kinds of queries that are likely, and they're very similar.
 ```sql
@@ -60,7 +60,7 @@ SELECT FROM products WHERE description = 'our input';
 ```
 In SQL, % is a wildcard. Since this is a search, it seems likely the first kind of query is most likely, however, we can construct a query that will work in either case.
 
-h3. Getting our data
+### Getting our data
 
 The data you might want to get depends on the site, but a common target would be the users. Now as for getting it, even if we know the query, it might be a hard step. A common way of getting data out though, is UNION. Basically, it says "Append the result of this query with the result of the last one". So, we can easily select the results of the two tables.
 ```sql
@@ -72,11 +72,11 @@ So, lets change our input to `s' UNION SELECT * FROM users -- `. Great! Now it w
 We now have a list of users and their passwords.
 Feel free to play around with various different strings. See if you can get some of the products displayed with it, or see if you can restrict it to only display one user.
 
-h2. Code Review
+## Code Review
 
 Now we know the person who wrote this code is incompetent, but where do we go from here?
 
-h3. Getting the code
+### Getting the code
 
 Lets look at the current code and see if we can tell why it's so wrong (apart from being written in PHP).
 Take a look at (insert URL here), and look at the index.php.
@@ -86,7 +86,7 @@ $query = $db->query("select * from products where description LIKE '%{$s}%'");
 That's the relevant line. It's just putting our user input into that query. Generally, anything like this is going to be horrible. While it's another category according to OWASP, you can think of XSS as another kind of this. You take user input and don't escape it for the medium. Escaping just means "turning the special characters into something not special". Keep in mind, this changes depending on what we're using it for, which is another big mistake people make. Removing characters like < and > is essential for XSS prevention, but not for SQL injection prevention.
 So, how do we fix this?
 
-h3. Bound parameters
+### Bound parameters
 
 If your language supports it, then you should use bound parameters where possible. Keep in mind, this exists for more than just SQL, so whenever you have a injection vector, you can likely use something like this.
 Bound parameters, or prepared statements, are statements which you construct with the specific intention of having place holder for user input. Then, when you put the user input in, your language can treat the input specially to avoid it having special characters.
@@ -98,7 +98,7 @@ $query->execute();
 ```
 As for what's going on here, we're just telling PHP that the content of :search is user input, so to treat it special and 'fix' its special characters. For SQL, this is mainly to do with the quote characters.
 
-h3. Escaping manually
+### Escaping manually
 
 There is an alternative to bound parameters, and that's escaping the strings yourself. Take for example shell injection. That's the same kind of thing, but instead of injecting code into a SQL server, we're injecting code that goes to a shell prompt (imagine a hacker being able to type whatever commands they want into your system!).
 ```php
@@ -111,17 +111,17 @@ pass_thru('ls ' . escapeshellarg($_GET['directory']); // A more secure way to vi
 ```
 So there you have it, we can manually take the user input and turn all the special characters to not special ones.
 
-h3. Fix it yourself!
+### Fix it yourself!
 
 Now with the knowledge of prepared statements and escaping, try fixing the index.php. I suggest prepared statements. Remember to use the PHP manual if you get stuck. Once you're done, compare with the answer in the /fixed directory and see how close you were. Even better, try running the script yourself and see if you can still inject it!
 
-h2. Going further
+## Going further
 
-h3. Automation
+### Automation
 
 There are already a lot of tools to do what we did manually, and they'll do it a lot faster, too. While they may not catch every possible vector to inject, they would save a lot of time. Check out SQLMap for example. Try running it against our test code and see whether it can get a list of the users for you!
 
-h3. SQL specific injection
+### SQL specific injection
 
 First of all, if you want to know more about SQL injection, you're probably going to have to learn one of the vendor specific dialects. The syntax we used for this example should work for most vendors implmentations, but you would be surprised how different SQLite is to MySQL, to MSSQL.
 If you do need specific vendor info in a hurry, try looking for a SQL injection cheat sheet -- they'll likely have most of the information need in a pinch.
