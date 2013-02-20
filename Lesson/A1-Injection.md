@@ -125,3 +125,19 @@ There are already a lot of tools to do what we did manually, and they'll do it a
 
 First of all, if you want to know more about SQL injection, you're probably going to have to learn one of the vendor specific dialects. The syntax we used for this example should work for most vendors implmentations, but you would be surprised how different SQLite is to MySQL, to MSSQL.
 If you do need specific vendor info in a hurry, try looking for a SQL injection cheat sheet -- they'll likely have most of the information need in a pinch.
+
+### Code execution from SQL Injection
+
+More information relevant to SQL injection specifically is that you can leverage this kind of exploit to get full remote code execution. Lets start with an easy case, Microsoft SQL Server on Windows XP:
+```
+EXEC xp_cmdshell 'net user';
+```
+You can execute commands as easily as that!
+
+If we want to hit more targets, it's going to get a bit harder.
+A useful technique for getting some code execution is to get the SQL server to write out a file with some code to a place in the web root. For example, in our application, if it was MySQL instead of SQLite, we might be able to do something like this:
+```sql
+SELECT * FROM products WHERE description LIKE '%d' UNION SELECT '<?php exec($_GET["c"]); ?>' INTO OUTFILE '/var/www/shell.php' -- %'
+```
+Now you simple browse to shell.php?c=ls%20-lah, and you have a shell!
+There are hundreds of ways to leverage a simple injection exploit, and while we can't cover them all here, the idea is to never have them, because as you can see, it could lead to a complete compromise before you know it.
