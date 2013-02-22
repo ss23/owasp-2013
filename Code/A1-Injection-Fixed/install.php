@@ -1,8 +1,8 @@
 <?php
 
 require 'database.php';
-$db->query('drop table products');
-$db->query('drop table users');
+$db->query('drop table if exists products');
+$db->query('drop table if exists users');
 
 $db->query('create table products (id int, title text, description text)');
 $db->query('insert into products (id, title, description) values (1, "Penetration Testing", "Awesome penetration testing, provided by a l33t haker!")');

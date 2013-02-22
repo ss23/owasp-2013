@@ -1,0 +1,3 @@
+Passwords are now hashed properly, using crypt() (5000 rounds of SHA512 + salt)
+Sessions are no longer included in the URL
+Session ID is regenerated on successful login
