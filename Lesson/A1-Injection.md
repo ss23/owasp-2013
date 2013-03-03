@@ -7,8 +7,8 @@
 
 ## Introduction to Injection
 
-While injection can cover a large (really, *large*) range of exploits, the most common one is probably the SQL injection. For those of you familiar with SQL, this should be painfully obvious. Yet, people keep getting it wrong. Notable examples of people in the past who can't seem to get it right include anyone from Hells Pizza to Oracle/MySQL themselves!
-Hopefully this should help get you up to speed on what SQL Injection is, how to prevent it, and most importantly, how to exploit it for $$$.
+While injection can cover a large (really, *large*) range of exploits, the most common one is probably the SQL injection. For those of you familiar with SQL, this should be painfully obvious. Yet, people keep getting it wrong.
+Hopefully this should help get you up to speed on what SQL Injection is, how to prevent it, and the different ways to leverage it in an attack.
 
 ### SQL Primer
 
@@ -122,12 +122,12 @@ Now with the knowledge of prepared statements and escaping, try fixing the index
 
 ### Automation
 
-There are already a lot of tools to do what we did manually, and they'll do it a lot faster, too. While they may not catch every possible vector to inject, they would save a lot of time. Check out SQLMap for example. Try running it against our test code and see whether it can get a list of the users for you!
+There are already a lot of tools to do what we did manually, and they'll do it a lot faster, too. While they may not catch every possible vector to inject, they would save a lot of time. Check out [SQLMap](http://sqlmap.org) for example. Try running it against our test code and see whether it can get a list of the users for you!
 
 ### SQL specific injection
 
 First of all, if you want to know more about SQL injection, you're probably going to have to learn one of the vendor specific dialects. The syntax we used for this example should work for most vendors implmentations, but you would be surprised how different SQLite is to MySQL, to MSSQL.
-If you do need specific vendor info in a hurry, try looking for a SQL injection cheat sheet -- they'll likely have most of the information need in a pinch.
+If you do need specific vendor info in a hurry, try looking for a SQL injection cheat sheet like http://pentestmonkey.net/category/cheat-sheet/sql-injection -- they'll likely have most of the information need in a pinch.
 
 ### Code execution from SQL Injection
 
@@ -143,4 +143,20 @@ A useful technique for getting some code execution is to get the SQL server to w
 SELECT * FROM products WHERE description LIKE '%d' UNION SELECT '<?php exec($_GET["c"]); ?>' INTO OUTFILE '/var/www/shell.php' -- %'
 ```
 Now you simple browse to `shell.php?c=ls -lah`, and you have a shell!
-There are hundreds of ways to leverage a simple injection exploit, and while we can't cover them all here, the idea is to never have them, because as you can see, it could lead to a complete compromise before you know it.
+
+### Authentication Bypass
+
+So along with the other kinds of things we've seen you can do, you can also log in as any (or an admin) user a lot of the time. Consider the following example:
+```
+SELECT * FROM `users` WHERE `username` LIKE 'foo' AND `password` LIKE 'bar'
+```
+There are a lot of things we could do with something as simple as this. Consider the wildcard % in SQL. What if we put our username as % and our password as `password`. As you can probably tell, we'll be logged in as one of the users who happens to have password as their password (which is far more likely than you might first think!).
+What if you wanted to make sure you authenticate as the administration account? Well, you can probably assume that either the administration account is called "admin", or perhaps that the ID of the administration account is 1, so what about a query that looks like:
+```
+SELECT * FROM `users` WHERE `username` LIKE 'foo' AND `password` LIKE '' OR id = 1 -- '
+# Or...
+SELECT * FROM `users` WHERE `username` LIKE 'admin' AND `password` LIKE '' OR 1 = 1 -- '
+```
+
+Really, all you need to do is be creative. SQL Injection opens up a world of different things you can do to the host. There are hundreds of ways to leverage a simple injection exploit, and we can't cover them all here.
+So, never have them, because as you can see, it could lead to a complete compromise before you know it.
