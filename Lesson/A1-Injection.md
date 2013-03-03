@@ -150,8 +150,9 @@ So along with the other kinds of things we've seen you can do, you can also log 
 ```sql
 SELECT * FROM `users` WHERE `username` LIKE 'foo' AND `password` LIKE 'bar'
 ```
-There are a lot of things we could do with something as simple as this. Consider the wildcard % in SQL. What if we put our username as % and our password as `password`. As you can probably tell, we'll be logged in as one of the users who happens to have password as their password (which is far more likely than you might first think!).
-What if you wanted to make sure you authenticate as the administration account? Well, you can probably assume that either the administration account is called "admin", or perhaps that the ID of the administration account is 1, so what about a query that looks like:
+There are a lot of things we could do with something as simple as this. Consider the wildcard % in SQL. What if we put our username as `%` and our password as `password`. As you can probably tell, we'll be logged in as one of the users who happens to have password as their password (which is far more likely than you might first think!).
+
+What if you wanted to make sure you authenticate as the administration account? Well, you can probably assume that either the administration account is called `admin`, or perhaps that the ID of the administration account is 1, so what about a query that looks like:
 ```sql
 SELECT * FROM `users` WHERE `username` LIKE 'foo' AND `password` LIKE '' OR id = 1 -- '
 # Or...
