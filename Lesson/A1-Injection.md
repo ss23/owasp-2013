@@ -132,7 +132,7 @@ If you do need specific vendor info in a hurry, try looking for a SQL injection 
 ### Code execution from SQL Injection
 
 More information relevant to SQL injection specifically is that you can leverage this kind of exploit to get full remote code execution. Lets start with an easy case, Microsoft SQL Server on Windows XP:
-```
+```sql
 EXEC xp_cmdshell 'net user';
 ```
 You can execute commands as easily as that!
@@ -147,12 +147,12 @@ Now you simple browse to `shell.php?c=ls -lah`, and you have a shell!
 ### Authentication Bypass
 
 So along with the other kinds of things we've seen you can do, you can also log in as any (or an admin) user a lot of the time. Consider the following example:
-```
+```sql
 SELECT * FROM `users` WHERE `username` LIKE 'foo' AND `password` LIKE 'bar'
 ```
 There are a lot of things we could do with something as simple as this. Consider the wildcard % in SQL. What if we put our username as % and our password as `password`. As you can probably tell, we'll be logged in as one of the users who happens to have password as their password (which is far more likely than you might first think!).
 What if you wanted to make sure you authenticate as the administration account? Well, you can probably assume that either the administration account is called "admin", or perhaps that the ID of the administration account is 1, so what about a query that looks like:
-```
+```sql
 SELECT * FROM `users` WHERE `username` LIKE 'foo' AND `password` LIKE '' OR id = 1 -- '
 # Or...
 SELECT * FROM `users` WHERE `username` LIKE 'admin' AND `password` LIKE '' OR 1 = 1 -- '
