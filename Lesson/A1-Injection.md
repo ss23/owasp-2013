@@ -10,9 +10,14 @@
 While injection can cover a large (really, *large*) range of exploits, the most common one is probably the SQL injection. For those of you familiar with SQL, this should be painfully obvious. Yet, people keep getting it wrong.
 Hopefully this should help get you up to speed on what SQL Injection is, how to prevent it, and the different ways to leverage it in an attack.
 
-### SQL Primer
+### SQL Introduction
 
-If you're not familiar with SQL, chances are you can find a nicer primer out there than this, but hopefully this will get you up to speed with the basics of what you need to know.
+If you're not familiar with SQL already, hopefully this tutorial will help get you up to speed on some basic concepts so that you'll be able to understand everything we cover here.
+The first thing worth noting is that there are many different dialects of SQL. In this tutorial, to keep it simple, we'll try and keep the queries as basic as possible so that it "should" run on most of the databases you're likely to see. Specifically though, the code in the examples is SQLite, and we'll go over some MySQL specific features a little later.
+If you're looking for some more comprehensive information on SQL, I suggest you check out the documentation for your specific database solution. Since we're going to be using SQLite a lot, you can have a look at the [SQLite documentation](http://www.sqlite.org/docs.html).
+
+### Some Simple SQL
+
 SQL is a language to access relationship databases. Imagine some table, and each of the tables have relationships to each other. So, you have a Product, which might have a Seller (that is, a company that sells this product). The tables for that might involve the product having an ID, a Title, and a Description. The Seller might involve an ID, Name, and Address. Then, a field for linking them might be Product having a Seller_id. If you're familiar with OOP, you might be able to draw parallels from there.
 
 So, lets say we want to create these tables:
@@ -30,7 +35,7 @@ And at this point, you might percieve a problem. What if you want to be able to 
 
 ### The Injection
 
-Funny story, my username for this site is actually `ss23"); DROP TABLE users;`. As you might imagine, the intention here is to delete the entire Users table, including all of it's data. The SQL query might look like this:
+Funny story, my username for this site is actually `ss23"); DROP TABLE users;`. As you might imagine, the intention here is to delete the entire Users table, including all of its data. The SQL query might look like this:
 ```sql
 INSERT INTO users (id, username) VALUES (1, "ss23"); DROP TABLE users;
 ```
@@ -128,6 +133,7 @@ There are already a lot of tools to do what we did manually, and they'll do it a
 
 First of all, if you want to know more about SQL injection, you're probably going to have to learn one of the vendor specific dialects. The syntax we used for this example should work for most vendors implmentations, but you would be surprised how different SQLite is to MySQL, to MSSQL.
 If you do need specific vendor info in a hurry, try looking for a SQL injection cheat sheet like http://pentestmonkey.net/category/cheat-sheet/sql-injection -- they'll likely have most of the information need in a pinch.
+In any case, the following examples might use some MySQL specific queries. As such, they probably won't work in the SQLite PHP we made, however, you might consider it a fun exercise to change to using MySQL and mess around there.
 
 ### Code execution from SQL Injection
 
@@ -159,5 +165,24 @@ SELECT * FROM `users` WHERE `username` LIKE 'foo' AND `password` LIKE '' OR id =
 SELECT * FROM `users` WHERE `username` LIKE 'admin' AND `password` LIKE '' OR 1 = 1 -- '
 ```
 
+### Blind injections and DoS
+
+As you might recognize from other languages, SQL also can have a `sleep()` function. This can serve a dual purpose as it were. If the application you're attacking has a set number of threads that the database can use, what would happen if you launched that many requests, each of them telling the database to sleep for an hour?
+```sql
+SELECT * FROM `users` `username` LIKE 'foo' AND `password` LIKE '' OR SLEEP(60) -- '
+```
+
+So, while a DoS vector exists, there's something more interesting here.
+Think about the case of a login form presented to users. Generally, you're not going to be able to see the actual result of your query, rather, you'll just see a "Login failed", or perhaps an error message if there's a syntax error in your injection attempt. However, what about if we change the amount of time that we sleep based off the data?
+```sql
+SELECT * FROM `users` `username` LIKE 'foo' AND `password` LIKE '' UNION SELECT IF(SUBSTRING(password,1,1) = CHAR(50),BENCHMARK(5000000,ENCODE('MSG','by 5 seconds')),null) FROM users WHERE id = 1 -- '
+```
+
+While the query looks complex, it's not too hard to explain. `UNION` just allows us to combine two queries in one. We have a standard `IF`, in the form `IF(condition, iftrue, else)`. So, if the first character of password is equal to `CHAR(50)`, which happens to be a `2`, then run BENCHMARK, which is like sleep, in that it will induce a notable delay. Lastely, we have a where condition to make sure this only matches the administration user.
+So, if you ran this many times, over each character, from A to Z, including everything else, you would eventually be able to figure out the first character. And so on, we can continue to the second and third and more characters.
+
+It's worth noting that this is a very watered-down example of blind injection. Outside of a tutorial, the techniques are much more advance. If you're interested in looking at some of the more real world examples, have a Google rather than attempting to use something like this.
+
+### Finally
 Really, all you need to do is be creative. SQL Injection opens up a world of different things you can do to the host. There are hundreds of ways to leverage a simple injection exploit, and we can't cover them all here.
 So, never have them, because as you can see, it could lead to a complete compromise before you know it.
