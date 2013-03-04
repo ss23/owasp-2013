@@ -169,13 +169,13 @@ SELECT * FROM `users` WHERE `username` LIKE 'admin' AND `password` LIKE '' OR 1 
 
 As you might recognize from other languages, SQL also can have a `sleep()` function. This can serve a dual purpose as it were. If the application you're attacking has a set number of threads that the database can use, what would happen if you launched that many requests, each of them telling the database to sleep for an hour?
 ```sql
-SELECT * FROM `users` `username` LIKE 'foo' AND `password` LIKE '' OR SLEEP(60) -- '
+SELECT * FROM `users` WHERE `username` LIKE 'foo' AND `password` LIKE '' OR SLEEP(60) -- '
 ```
 
 So, while a DoS vector exists, there's something more interesting here.
 Think about the case of a login form presented to users. Generally, you're not going to be able to see the actual result of your query, rather, you'll just see a "Login failed", or perhaps an error message if there's a syntax error in your injection attempt. However, what about if we change the amount of time that we sleep based off the data?
 ```sql
-SELECT * FROM `users` `username` LIKE 'foo' AND `password` LIKE '' UNION SELECT IF(SUBSTRING(password,1,1) = CHAR(50),BENCHMARK(5000000,ENCODE('MSG','by 5 seconds')),null) FROM users WHERE id = 1 -- '
+SELECT * FROM `users` WHERE `username` LIKE 'foo' AND `password` LIKE '' UNION SELECT IF(SUBSTRING(password,1,1) = CHAR(50),BENCHMARK(5000000,ENCODE('MSG','by 5 seconds')),null) FROM users WHERE id = 1 -- '
 ```
 
 While the query looks complex, it's not too hard to explain. `UNION` just allows us to combine two queries in one. We have a standard `IF`, in the form `IF(condition, iftrue, else)`. So, if the first character of password is equal to `CHAR(50)`, which happens to be a `2`, then run BENCHMARK, which is like sleep, in that it will induce a notable delay. Lastely, we have a where condition to make sure this only matches the administration user.
